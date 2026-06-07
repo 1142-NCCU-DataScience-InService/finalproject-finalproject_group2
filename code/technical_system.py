@@ -55,7 +55,10 @@ def download_data(ticker: str, start: str, end: str) -> pd.DataFrame:
     return df[["Open", "High", "Low", "Close", "Volume"]].copy()
 
 
-def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
+def add_indicators(df: pd.DataFrame, target_horizon: int = 1) -> pd.DataFrame:
+    if target_horizon < 1:
+        raise ValueError("target_horizon must be >= 1.")
+
     out = df.copy()
     out["return_1d"] = out["Close"].pct_change()
     
@@ -70,6 +73,7 @@ def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     
     #2. 成交量變化率(標準化體積)
     out["vol_chg"] = out["Volume"].pct_change()
+    out["volume_ratio_20"] = out["Volume"] / out["Volume"].rolling(20).mean()
 
     #3. RSI 本身已是平穩化指標(0~100)
     delta = out["Close"].diff()
@@ -84,9 +88,22 @@ def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     out["macd"] = (ema12 - ema26) / out["Close"]
     out["macd_signal"] = out["macd"].ewm(span=9,adjust=False).mean()
     out["macd_hist"] = out["macd"] - out["macd_signal"]
+
+    high_low = out["High"] - out["Low"]
+    high_close = (out["High"] - out["Close"].shift(1)).abs()
+    low_close = (out["Low"] - out["Close"].shift(1)).abs()
+    true_range = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+    out["atr_ratio_14"] = true_range.rolling(14).mean() / out["Close"]
+    out["volatility_20"] = out["return_1d"].rolling(20).std()
+    bb_mid = out["Close"].rolling(20).mean()
+    bb_std = out["Close"].rolling(20).std()
+    bb_upper = bb_mid + 2 * bb_std
+    bb_lower = bb_mid - 2 * bb_std
+    out["bb_width_20"] = (bb_upper - bb_lower) / bb_mid
     
     #Target
-    out["target"] = (out["Close"].shift(-1) > out["Close"]).astype(int)
+    out["future_return"] = out["Close"].shift(-target_horizon) / out["Close"] - 1
+    out["target"] = (out["future_return"] > 0).astype(int)
     out = out.replace([np.inf, -np.inf], np.nan)
     out = out.dropna().copy()
     return out

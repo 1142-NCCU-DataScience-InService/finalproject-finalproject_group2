@@ -15,7 +15,7 @@ from technical_system import (
 )
 
 
-FEATURE_COLS = [
+BASE_FEATURE_COLS = [
     "return_1d",
     "ma_ratio",
     "bias_5",
@@ -26,6 +26,19 @@ FEATURE_COLS = [
     "macd_signal",  
     "macd_hist",    
 ]
+
+VOLATILITY_FEATURE_COLS = [
+    "atr_ratio_14",
+    "volatility_20",
+    "volume_ratio_20",
+    "bb_width_20",
+]
+
+
+def get_feature_cols(include_volatility_features: bool) -> list[str]:
+    if include_volatility_features:
+        return [*BASE_FEATURE_COLS, *VOLATILITY_FEATURE_COLS]
+    return BASE_FEATURE_COLS.copy()
 
 
 TEXT = {
@@ -146,9 +159,47 @@ def execute_dynamic_leverage(p: float, th: float) -> float:
         return -1.0  # 敺??銝?(銝撞璈?璆萎?) : ?征
     else:
         return 0.0  # 摰瘝縑敹?蝛箸?閫??> 璈???.40 ~ threshold 銋?
-        
+
+
+def position_direction(position: float) -> int:
+    if position > 0:
+        return 1
+    if position < 0:
+        return -1
+    return 0
+
+
+def apply_two_day_confirmation(target_positions: pd.Series) -> pd.Series:
+    directions = target_positions.map(position_direction)
+    confirmed: list[float] = []
+    previous_confirmed = 0.0
+
+    for idx, target_position in enumerate(target_positions):
+        if idx > 0 and directions.iloc[idx] == directions.iloc[idx - 1]:
+            previous_confirmed = float(target_position)
+        confirmed.append(previous_confirmed)
+
+    return pd.Series(confirmed, index=target_positions.index, dtype=float)
+
+
+def strategy_mode_label(strategy_mode: str, lang: str) -> str:
+    if strategy_mode == "five_day_confirm":
+        return "5 日方向 + 連續兩日確認" if lang == "zh" else "5-day direction + two-day confirmation"
+    return "1 日方向（原始版本）" if lang == "zh" else "1-day direction (original)"
+
+
+def get_strategy_config(strategy_mode: str) -> tuple[int, str]:
+    if strategy_mode == "five_day_confirm":
+        return 5, "five_day_confirm"
+    return 1, "one_day"
+
+
 def run_backtest(
-    eval_df: pd.DataFrame, proba_up: np.ndarray, threshold: float, cost_per_trade: float
+    eval_df: pd.DataFrame,
+    proba_up: np.ndarray,
+    threshold: float,
+    cost_per_trade: float,
+    strategy_mode: str = "one_day",
 ) -> pd.DataFrame:
     bt = eval_df.copy()
     bt["pred_prob_up"] = proba_up
@@ -156,11 +207,16 @@ def run_backtest(
     # 瘙箏??其?憭批? (??瑽▼)
     v_func = np.vectorize(execute_dynamic_leverage)
     bt["target_position"] = v_func(proba_up, threshold)
+    bt["signal_direction"] = bt["target_position"].map(position_direction)
+    if strategy_mode == "five_day_confirm":
+        bt["confirmed_target_position"] = apply_two_day_confirmation(bt["target_position"])
+    else:
+        bt["confirmed_target_position"] = bt["target_position"]
     
     bt["asset_ret"] = bt["Close"].pct_change().fillna(0.0)
     
     # 雿輻??憭拍?瘙箏??瑁?
-    bt["position"] = bt["target_position"].shift(1).fillna(0)
+    bt["position"] = bt["confirmed_target_position"].shift(1).fillna(0)
     bt["position_chg"] = bt["position"].diff().abs().fillna(bt["position"])
     
     # ??寞?霈???獢踹閮?
@@ -181,6 +237,7 @@ def pick_threshold(
     max_threshold: float,
     step: float,
     cost_per_trade: float,
+    strategy_mode: str = "one_day",
 ) -> tuple[float, pd.DataFrame]:
     thresholds = np.arange(min_threshold, max_threshold + 1e-12, step)
     best_threshold = min_threshold
@@ -188,7 +245,7 @@ def pick_threshold(
     rows: list[dict] = []
 
     for th in thresholds:
-        bt = run_backtest(val_df, proba_up, float(th), cost_per_trade)
+        bt = run_backtest(val_df, proba_up, float(th), cost_per_trade, strategy_mode)
         perf = performance_report(bt)
         rows.append(
             {
@@ -240,10 +297,12 @@ def evaluate_models(
     threshold_max: float,
     threshold_step: float,
     cost_per_trade: float,
+    strategy_mode: str,
+    feature_cols: list[str],
 ) -> tuple[pd.DataFrame, dict[str, dict], str]:
-    X_train, y_train = train_df[FEATURE_COLS], train_df["target"]
-    X_val, y_val = val_df[FEATURE_COLS], val_df["target"]
-    X_test, y_test = test_df[FEATURE_COLS], test_df["target"]
+    X_train, y_train = train_df[feature_cols], train_df["target"]
+    X_val, y_val = val_df[feature_cols], val_df["target"]
+    X_test, y_test = test_df[feature_cols], test_df["target"]
 
     rows: list[dict] = []
     detail: dict[str, dict] = {}
@@ -265,13 +324,14 @@ def evaluate_models(
                 max_threshold=threshold_max,
                 step=threshold_step,
                 cost_per_trade=cost_per_trade,
+                strategy_mode=strategy_mode,
             )
-        val_bt = run_backtest(val_df, val_proba, selected_threshold, cost_per_trade)
+        val_bt = run_backtest(val_df, val_proba, selected_threshold, cost_per_trade, strategy_mode)
         val_perf = performance_report(val_bt)
 
         test_pred = model.predict(X_test)
         test_proba = model.predict_proba(X_test)[:, 1] if hasattr(model, "predict_proba") else test_pred.astype(float)
-        test_bt = run_backtest(test_df, test_proba, selected_threshold, cost_per_trade)
+        test_bt = run_backtest(test_df, test_proba, selected_threshold, cost_per_trade, strategy_mode)
         test_perf = performance_report(test_bt)
         test_diag = strategy_diagnostics(test_bt)
 
@@ -334,6 +394,8 @@ def render_project_lifecycle_dashboard(
     best: dict,
     selected_threshold: float,
     cost_bps: float,
+    target_horizon: int,
+    strategy_mode: str,
     next_prob_up: float,
     next_target_position: float,
 ) -> None:
@@ -344,7 +406,10 @@ def render_project_lifecycle_dashboard(
     st.caption(tr(lang, "lifecycle_caption"))
 
     summary_cols = st.columns(4)
-    summary_cols[0].metric(tr(lang, "problem"), "Next-day direction" if lang == "en" else "預測隔日漲跌")
+    summary_cols[0].metric(
+        tr(lang, "problem"),
+        f"{target_horizon}-day direction" if lang == "en" else f"預測 {target_horizon} 日方向",
+    )
     summary_cols[1].metric(tr(lang, "data_rows"), f"{len(df):,}")
     summary_cols[2].metric(tr(lang, "best_model"), best_name)
     summary_cols[3].metric(tr(lang, "test_return"), fmt_pct(perf_test["strategy_total_return"]))
@@ -355,12 +420,12 @@ def render_project_lifecycle_dashboard(
         node [shape=box, style="rounded,filled", color="#7b8794", fillcolor="#eef6fb", fontname="Arial", fontsize=12, margin="0.15,0.10"];
         edge [color="#8c96a3", arrowsize=0.8, penwidth=1.4];
 
-        goal [label="1. Define goal\\nPredict next-day direction"];
+        goal [label="1. Define goal\\nPredict selected horizon"];
         data [label="2. Collect data\\nyfinance OHLCV"];
         build [label="3. Build model\\nTechnical indicators + ML"];
         eval [label="4. Evaluate model\\nValidation + test backtest"];
         present [label="5. Present results\\nDashboard + CSV"];
-        deploy [label="6. Deploy model\\nNext-day signal"];
+        deploy [label="6. Deploy model\\nLatest signal"];
 
         goal -> data -> build -> eval -> present -> deploy;
         eval -> build [label=" critique", fontsize=10, color="#b07d62"];
@@ -374,9 +439,9 @@ def render_project_lifecycle_dashboard(
             {
                 "Lifecycle step": "Define the goal",
                 "Question": "我要解決什麼問題？",
-                "Project result": f"預測 {ticker} 下一個交易日是否上漲，並測試這個訊號是否能形成可用的交易策略。",
-                "Method detail": "建立二元分類目標：若明日收盤價高於今日收盤價，target=1；否則 target=0。",
-                "Evidence in app": "Target = next-day Close > current Close。",
+                "Project result": f"預測 {ticker} 未來 {target_horizon} 個交易日後是否上漲，並測試這個訊號是否能形成可用的交易策略。",
+                "Method detail": f"建立二元分類目標：若未來 {target_horizon} 個交易日後收盤價高於今日收盤價，target=1；否則 target=0。策略模式為 {strategy_mode_label(strategy_mode, lang)}。",
+                "Evidence in app": f"Target = {target_horizon}-day future Close > current Close。",
             },
             {
                 "Lifecycle step": "Collect and manage data",
@@ -409,7 +474,7 @@ def render_project_lifecycle_dashboard(
             {
                 "Lifecycle step": "Deploy model",
                 "Question": "模型如何在真實情境使用？",
-                "Project result": f"目前訓練出的最佳模型會輸出下一交易日上漲機率 P(up) = {next_prob_up:.4f}。",
+                "Project result": f"目前訓練出的最佳模型會輸出未來 {target_horizon} 個交易日方向的上漲機率 P(up) = {next_prob_up:.4f}。",
                 "Method detail": "訓練後將最新一筆特徵輸入最佳模型，得到 P(up)，再由交易規則轉換成下一交易日的 target position。",
                 "Evidence in app": f"建議目標部位 = {next_target_position:.2f}x；交易成本假設 = {cost_bps:.1f} bps。",
             },
@@ -419,9 +484,9 @@ def render_project_lifecycle_dashboard(
         {
             "Lifecycle step": "Define the goal",
             "Question": "What problem am I solving?",
-            "Project result": f"Predict whether {ticker} will rise on the next trading day and test whether the signal can support a trading strategy.",
-            "Method detail": "Create a binary classification target: 1 means tomorrow's close is higher than today's close; 0 means otherwise.",
-            "Evidence in app": "Target = next-day Close > current Close.",
+            "Project result": f"Predict whether {ticker} will rise after the next {target_horizon} trading day(s) and test whether the signal can support a trading strategy.",
+            "Method detail": f"Create a binary classification target: 1 means the close after {target_horizon} trading day(s) is higher than today's close; 0 means otherwise. Strategy mode is {strategy_mode_label(strategy_mode, lang)}.",
+            "Evidence in app": f"Target = {target_horizon}-day future Close > current Close.",
         },
         {
             "Lifecycle step": "Collect and manage data",
@@ -454,7 +519,7 @@ def render_project_lifecycle_dashboard(
         {
             "Lifecycle step": "Deploy model",
             "Question": "How can the model be used in the real world?",
-            "Project result": f"The current trained best model produces a next-trading-day probability P(up) = {next_prob_up:.4f}.",
+            "Project result": f"The current trained best model produces a {target_horizon}-day direction probability P(up) = {next_prob_up:.4f}.",
             "Method detail": "After training, the latest feature row is passed into the selected model to estimate P(up). The trading rule converts that probability into a target position for the next trading day.",
             "Evidence in app": f"Suggested target position = {next_target_position:.2f}x; trading cost assumption = {cost_bps:.1f} bps.",
         },
@@ -607,6 +672,9 @@ def render_backtest_dashboard(
     selected_threshold: float,
     cost_bps: float,
     auto_threshold: bool,
+    target_horizon: int,
+    strategy_mode: str,
+    include_volatility_features: bool,
     next_prob_up: float,
     next_target_position: float,
 ) -> None:
@@ -669,16 +737,22 @@ def render_backtest_dashboard(
     st.subheader(tr(lang, "strategy_definition"))
     if lang == "zh":
         strategy_note = (
+            f"- 預測目標：未來 {target_horizon} 個交易日方向 (`target = future_return_{target_horizon}d > 0`)\n"
+            f"- 波動度特徵：{'使用' if include_volatility_features else '未使用'}\n"
             f"- 訊號規則：動態槓桿 (`target_position = f(P(up), threshold={selected_threshold:.2f})`)\n"
-            "- 執行規則：使用前一日目標部位 (`position = target_position.shift(1)`)\n"
+            f"- 策略模式：{strategy_mode_label(strategy_mode, lang)}\n"
+            "- 執行規則：使用前一日確認後目標部位 (`position = confirmed_target_position.shift(1)`)\n"
             f"- 交易成本：每次部位變化扣 {cost_bps:.1f} bps\n"
             f"- Threshold 模式：{'在 validation 自動搜尋' if auto_threshold else '固定 threshold'}\n"
             "- 模型選擇規則：選擇 validation strategy total return 最高的模型"
         )
     else:
         strategy_note = (
+            f"- Prediction target: next {target_horizon} trading-day direction (`target = future_return_{target_horizon}d > 0`)\n"
+            f"- Volatility features: {'Enabled' if include_volatility_features else 'Disabled'}\n"
             f"- Signal rule: Dynamic leverage (`target_position = f(P(up), threshold={selected_threshold:.2f})`)\n"
-            "- Execution rule: use previous-day target position (`position = target_position.shift(1)`)\n"
+            f"- Strategy mode: {strategy_mode_label(strategy_mode, lang)}\n"
+            "- Execution rule: use previous-day confirmed target position (`position = confirmed_target_position.shift(1)`)\n"
             f"- Trading cost: {cost_bps:.1f} bps per position change\n"
             f"- Threshold mode: {'Auto-search on validation' if auto_threshold else 'Fixed threshold'}\n"
             "- Model selection rule: choose model with highest validation strategy total return"
@@ -732,7 +806,15 @@ def render_backtest_dashboard(
     st.line_chart(curve_df, use_container_width=True)
 
     st.subheader(tr(lang, "signal_snapshot"))
-    signal_df = bt_test[["Close", "pred_prob_up", "target_position", "position"]].copy()
+    signal_cols = [
+        "Close",
+        "pred_prob_up",
+        "signal_direction",
+        "target_position",
+        "confirmed_target_position",
+        "position",
+    ]
+    signal_df = bt_test[[col for col in signal_cols if col in bt_test.columns]].copy()
     st.dataframe(signal_df.tail(100), use_container_width=True)
 
     st.subheader(tr(lang, "next_prediction"))
@@ -745,7 +827,9 @@ def render_backtest_dashboard(
         [
             "Close",
             "pred_prob_up",
+            "signal_direction",
             "target_position",
+            "confirmed_target_position",
             "position",
             "asset_ret",
             "strategy_ret",
@@ -767,13 +851,14 @@ def render_backtest_dashboard(
 def architecture_modules(lang: str, result: dict | None = None) -> dict[str, dict[str, str]]:
     ticker = result["ticker"] if result else "2330.TW"
     best_name = result["best_name"] if result else "selected best model"
+    target_horizon = result.get("target_horizon", 1) if result else 1
     if lang == "zh":
         return {
             "goal": {
                 "label": "1. 研究目標",
-                "role": "定義問題：預測下一交易日是否上漲，並檢查訊號是否能支援交易策略。",
+                "role": f"定義問題：預測未來 {target_horizon} 個交易日後是否上漲，並檢查訊號是否能支援交易策略。",
                 "inputs": "股票代號、日期區間、validation/test 比例、threshold 與交易成本。",
-                "outputs": "target：隔日收盤價是否高於今日收盤價。",
+                "outputs": f"target：未來 {target_horizon} 個交易日後收盤價是否高於今日收盤價。",
                 "evidence": "Backtest Dashboard 的 Strategy Definition 顯示目前訊號規則與交易成本。",
             },
             "data": {
@@ -820,7 +905,7 @@ def architecture_modules(lang: str, result: dict | None = None) -> dict[str, dic
             },
             "present": {
                 "label": "8. 視覺化與部署",
-                "role": "將結果整理成 dashboard、CSV 與下一交易日預測。",
+                "role": "將結果整理成 dashboard、CSV 與最新方向預測。",
                 "inputs": "最佳模型、測試集回測、最新特徵。",
                 "outputs": "模型比較、生命週期說明、CSV、P(up)、target position。",
                 "evidence": "Next Trading Day Prediction 與 Download CSV 是最後輸出。",
@@ -829,9 +914,9 @@ def architecture_modules(lang: str, result: dict | None = None) -> dict[str, dic
     return {
         "goal": {
             "label": "1. Goal",
-            "role": "Define the problem: predict whether the next trading day will rise and test whether the signal supports a trading strategy.",
+            "role": f"Define the problem: predict whether the close after {target_horizon} trading day(s) will rise and test whether the signal supports a trading strategy.",
             "inputs": "Ticker, date range, validation/test ratios, threshold, and trading cost.",
-            "outputs": "Target: whether tomorrow's close is above today's close.",
+            "outputs": f"Target: whether the close after {target_horizon} trading day(s) is above today's close.",
             "evidence": "Strategy Definition shows the signal rule and trading cost assumption.",
         },
         "data": {
@@ -878,7 +963,7 @@ def architecture_modules(lang: str, result: dict | None = None) -> dict[str, dic
         },
         "present": {
             "label": "8. Visualization & Deployment",
-            "role": "Package results into dashboards, CSV, and next-day prediction.",
+            "role": "Package results into dashboards, CSV, and latest direction prediction.",
             "inputs": "Best model, test backtest, and latest feature row.",
             "outputs": "Model comparison, lifecycle explanation, CSV, P(up), and target position.",
             "evidence": "Next Trading Day Prediction and Download CSV are final outputs.",
@@ -970,27 +1055,31 @@ def render_architecture_explorer(lang: str, result: dict | None = None) -> None:
 
 def render_training_data_tab(lang: str, result: dict) -> None:
     st.subheader("Training Data" if lang == "en" else "訓練資料")
+    target_horizon = result.get("target_horizon", 1)
+    feature_cols = result.get("feature_cols", BASE_FEATURE_COLS)
     if lang == "zh":
         st.markdown(
-            """
+            f"""
             這個頁籤說明技術面模型實際使用哪些資料來訓練，以及資料從原始價格轉成模型特徵的流程。
 
             - **資料來源**：Yahoo Finance OHLCV 價格與成交量資料。
             - **處理前資料**：每日 `Open / High / Low / Close / Volume`。
             - **處理後資料**：加入報酬率、均線相對位置、RSI、MACD、成交量變化率等技術指標。
-            - **訓練目標**：`target = 1` 代表下一個交易日收盤價高於當日收盤價，否則為 `0`。
+            - **波動度特徵開關**：開啟後會加入 ATR ratio、20 日歷史波動率、20 日成交量倍率與布林通道寬度。
+            - **訓練目標**：`target = 1` 代表未來 {target_horizon} 個交易日後收盤價高於當日收盤價，否則為 `0`。
             - **切分方式**：依時間順序切成 train / validation / test，不隨機打散。
             """
         )
     else:
         st.markdown(
-            """
+            f"""
             This tab explains what data the technical models train on and how raw prices become model features.
 
             - **Data source**: Yahoo Finance OHLCV price and volume data.
             - **Before processing**: daily `Open / High / Low / Close / Volume`.
             - **After processing**: returns, relative moving-average position, RSI, MACD, and volume-change features.
-            - **Training target**: `target = 1` when the next trading day's close is above today's close; otherwise `0`.
+            - **Volatility feature toggle**: when enabled, the model also uses ATR ratio, 20-day historical volatility, 20-day volume ratio, and Bollinger Band width.
+            - **Training target**: `target = 1` when the close after {target_horizon} trading day(s) is above today's close; otherwise `0`.
             - **Split rule**: chronological train / validation / test split without random shuffling.
             """
         )
@@ -1006,14 +1095,14 @@ def render_training_data_tab(lang: str, result: dict) -> None:
     c4.metric(tr(lang, "total_rows"), f"{len(df):,}")
 
     st.markdown("### " + ("Feature Columns" if lang == "en" else "特徵欄位"))
-    st.dataframe(pd.DataFrame({"feature": FEATURE_COLS}), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame({"feature": feature_cols}), use_container_width=True, hide_index=True)
 
     st.markdown("### " + ("Model Training Summary" if lang == "en" else "模型訓練摘要"))
     metric_cols = ["model", "val_accuracy", "val_precision", "val_recall", "val_f1", "test_accuracy", "test_f1"]
     st.dataframe(result["table"][[col for col in metric_cols if col in result["table"].columns]], use_container_width=True, hide_index=True)
 
     st.markdown("### " + ("Processed Data Preview" if lang == "en" else "處理後資料預覽"))
-    preview_cols = ["Open", "High", "Low", "Close", "Volume", *FEATURE_COLS, "target"]
+    preview_cols = ["Open", "High", "Low", "Close", "Volume", *feature_cols, "future_return", "target"]
     preview_cols = [col for col in preview_cols if col in df.columns]
     st.dataframe(df[preview_cols].tail(100), use_container_width=True)
 
@@ -1028,6 +1117,20 @@ def main() -> None:
         ticker = st.text_input("Ticker", value="2330.TW", help="Yahoo Finance ticker, for example 2330.TW, AAPL, MSFT, or 0050.TW.")
         start = st.date_input("Start date", value=pd.Timestamp("2015-01-01"))
         end = st.date_input("End date", value=pd.Timestamp("2026-01-01"))
+        strategy_choice = st.selectbox(
+            "Prediction / strategy version",
+            [
+                "1-day direction (original)",
+                "5-day direction + two-day confirmation",
+            ],
+            index=0,
+        )
+        strategy_mode = "five_day_confirm" if strategy_choice.startswith("5-day") else "one_day"
+        target_horizon, backtest_strategy_mode = get_strategy_config(strategy_mode)
+        include_volatility_features = st.checkbox(
+            "Use volatility features (ATR / 20-day volatility / volume ratio / Bollinger width)",
+            value=False,
+        )
         val_size = st.slider("Validation ratio", 0.1, 0.3, 0.2, 0.05)
         test_size = st.slider("Test ratio", 0.1, 0.3, 0.2, 0.05)
         auto_threshold = st.checkbox("Auto-search threshold on validation", value=True)
@@ -1063,9 +1166,10 @@ def main() -> None:
             return
 
         cost_per_trade = cost_bps / 10000.0
+        feature_cols = get_feature_cols(include_volatility_features)
         with st.spinner("Downloading data and training models..."):
             raw = download_data(ticker=ticker, start=str(start), end=str(end))
-            df = add_indicators(raw)
+            df = add_indicators(raw, target_horizon=target_horizon)
             train_df, val_df, test_df = time_series_split_three(df, val_size=val_size, test_size=test_size)
             table, detail, best_name = evaluate_models(
                 train_df=train_df,
@@ -1077,11 +1181,13 @@ def main() -> None:
                 threshold_max=threshold_max,
                 threshold_step=threshold_step,
                 cost_per_trade=cost_per_trade,
+                strategy_mode=backtest_strategy_mode,
+                feature_cols=feature_cols,
             )
 
             best = detail[best_name]
             selected_threshold = best["threshold"]
-            latest_features = df[FEATURE_COLS].tail(1)
+            latest_features = df[feature_cols].tail(1)
             best_model = best["model"]
             next_prob_up = (
                 float(best_model.predict_proba(latest_features)[:, 1][0])
@@ -1089,6 +1195,18 @@ def main() -> None:
                 else float(best_model.predict(latest_features)[0])
             )
             next_target_position = execute_dynamic_leverage(next_prob_up, selected_threshold)
+            if backtest_strategy_mode == "five_day_confirm":
+                latest_probs = (
+                    best_model.predict_proba(df[feature_cols].tail(2))[:, 1]
+                    if hasattr(best_model, "predict_proba")
+                    else best_model.predict(df[feature_cols].tail(2)).astype(float)
+                )
+                latest_targets = [execute_dynamic_leverage(float(prob), selected_threshold) for prob in latest_probs]
+                latest_directions = [position_direction(position) for position in latest_targets]
+                if len(latest_directions) == 2 and latest_directions[-1] == latest_directions[-2]:
+                    next_target_position = latest_targets[-1]
+                else:
+                    next_target_position = float(best["test_bt"]["position"].iloc[-1])
 
         st.session_state["dashboard_result"] = {
             "ticker": ticker,
@@ -1104,6 +1222,10 @@ def main() -> None:
             "selected_threshold": selected_threshold,
             "cost_bps": cost_bps,
             "auto_threshold": auto_threshold,
+            "target_horizon": target_horizon,
+            "strategy_mode": backtest_strategy_mode,
+            "include_volatility_features": include_volatility_features,
+            "feature_cols": feature_cols,
             "lang": lang,
             "next_prob_up": next_prob_up,
             "next_target_position": next_target_position,
@@ -1131,6 +1253,9 @@ def main() -> None:
             selected_threshold=result["selected_threshold"],
             cost_bps=result["cost_bps"],
             auto_threshold=result["auto_threshold"],
+            target_horizon=result["target_horizon"],
+            strategy_mode=result["strategy_mode"],
+            include_volatility_features=result["include_volatility_features"],
             next_prob_up=result["next_prob_up"],
             next_target_position=result["next_target_position"],
         )
@@ -1153,6 +1278,8 @@ def main() -> None:
             best=result["detail"][result["best_name"]],
             selected_threshold=result["selected_threshold"],
             cost_bps=result["cost_bps"],
+            target_horizon=result["target_horizon"],
+            strategy_mode=result["strategy_mode"],
             next_prob_up=result["next_prob_up"],
             next_target_position=result["next_target_position"],
         )
