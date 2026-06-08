@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import numpy as np
 import pandas as pd
@@ -263,9 +263,9 @@ def pick_threshold(
 
 
 def strategy_diagnostics(bt: pd.DataFrame) -> dict[str, float]:
-    in_position = bt["position"] > 0
-    entry_count = int(((bt["position"] > 0) & (bt["position"].shift(1).fillna(0) == 0)).sum())
-    holding_ratio = float(bt["position"].mean())
+    in_position = bt["position"] != 0
+    entry_count = int(((bt["position"] != 0) & (bt["position"].shift(1).fillna(0) == 0)).sum())
+    holding_ratio = float(in_position.mean())
     active_days = int(in_position.sum())
     active_ret = bt.loc[in_position, "strategy_ret"]
     win_rate = float((active_ret > 0).mean()) if len(active_ret) > 0 else 0.0
@@ -368,7 +368,7 @@ def evaluate_models(
             "test_diag": test_diag,
         }
 
-        if val_perf["strategy_total_return"] > best_val_return:
+        if name not in ["AlwaysUp", "Random"] and val_perf["strategy_total_return"] > best_val_return:
             best_val_return = val_perf["strategy_total_return"]
             best_model_name = name
 
@@ -455,7 +455,7 @@ def render_project_lifecycle_dashboard(
                 "Question": "資料中有哪些模式可以用來解決問題？",
                 "Project result": f"建立 {len(table):,} 個候選模型，使用 return、MA ratio、bias、volume change、RSI 與 MACD 類技術指標訓練。",
                 "Method detail": "模型只使用 training split 訓練。線性模型先用 StandardScaler 標準化再進 Logistic Regression；PCA_LogReg 會先降維再分類；樹模型則從相同特徵中學習非線性規則。Validation/Test 只用於評估，不參與訓練。",
-                "Evidence in app": "候選模型包含 LogisticRegression_Ridge、PCA_LogReg、RandomForest，以及環境有安裝時的 XGBoost。",
+                "Evidence in app": "候選模型包含 AlwaysUp 與 Random 基準模型，以及 LogisticRegression_Ridge、PCA_LogReg、RandomForest 與 XGBoost (選配)。",
             },
             {
                 "Lifecycle step": "Evaluate and critique model",
@@ -500,7 +500,7 @@ def render_project_lifecycle_dashboard(
             "Question": "What patterns can lead to solutions?",
             "Project result": f"Built {len(table):,} candidate models using technical indicators: return, MA ratio, bias, volume change, RSI, and MACD-based features.",
             "Method detail": "Training uses only the training split. Linear models use StandardScaler before Logistic Regression; PCA_LogReg additionally reduces dimensions before classification. Tree-based models learn nonlinear rules from the same engineered features. Each model is fit once on X_train/y_train, then evaluated on validation and test without retraining on those splits.",
-            "Evidence in app": "Candidate models include LogisticRegression_Ridge, PCA_LogReg, RandomForest, and XGBoost when the package is installed.",
+            "Evidence in app": "Candidate models include AlwaysUp and Random baselines, plus LogisticRegression_Ridge, PCA_LogReg, RandomForest, and XGBoost when installed.",
         },
         {
             "Lifecycle step": "Evaluate and critique model",
@@ -801,8 +801,13 @@ def render_backtest_dashboard(
         )
 
     st.subheader(tr(lang, "equity_curve"))
-    curve_df = bt_test[["strategy_cum", "buy_hold_cum"]].copy()
-    curve_df.columns = ["Strategy", "Buy & Hold"]
+    curve_df = pd.DataFrame(index=bt_test.index)
+    curve_df[f"Strategy (Best: {best_name})"] = bt_test["strategy_cum"]
+    curve_df["Buy & Hold"] = bt_test["buy_hold_cum"]
+    if "AlwaysUp" in detail:
+        curve_df["Baseline: AlwaysUp"] = detail["AlwaysUp"]["test_bt"]["strategy_cum"]
+    if "Random" in detail:
+        curve_df["Baseline: Random"] = detail["Random"]["test_bt"]["strategy_cum"]
     st.line_chart(curve_df, use_container_width=True)
 
     st.subheader(tr(lang, "signal_snapshot"))
@@ -986,6 +991,7 @@ digraph G {{
   logreg [label="Logistic / PCA", fillcolor="#ede9fe"];
   forest [label="RandomForest", fillcolor="#ede9fe"];
   xgb [label="XGBoost optional", fillcolor="#ede9fe"];
+  baselines [label="Baselines\\nAlwaysUp / Random", fillcolor="#f1f5f9"];
   selection [label="{modules["selection"]["label"]}\\nValidation return", fillcolor="#fdf2f8"];
   backtest [label="{modules["backtest"]["label"]}\\nDynamic leverage", fillcolor="#fee2e2"];
   present [label="{modules["present"]["label"]}\\nCharts + CSV + prediction", fillcolor="#dcfce7"];
@@ -993,6 +999,7 @@ digraph G {{
   split -> logreg -> selection;
   split -> forest -> selection;
   split -> xgb -> selection;
+  split -> baselines -> selection;
   selection -> backtest -> present;
 }}
 """

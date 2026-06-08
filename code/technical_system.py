@@ -32,8 +32,45 @@ from sklearn.metrics import (
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+from sklearn.base import BaseEstimator, ClassifierMixin
 
 warnings.filterwarnings("ignore")
+
+
+class AlwaysUpClassifier(BaseEstimator, ClassifierMixin):
+    def __init__(self):
+        self.classes_ = np.array([0, 1])
+
+    def fit(self, X, y):
+        self.classes_ = np.unique(y) if len(y) > 0 else np.array([0, 1])
+        return self
+
+    def predict(self, X):
+        return np.ones(len(X), dtype=int)
+
+    def predict_proba(self, X):
+        probs = np.zeros((len(X), 2))
+        probs[:, 1] = 1.0
+        return probs
+
+
+class RandomClassifier(BaseEstimator, ClassifierMixin):
+    def __init__(self, random_state=42):
+        self.random_state = random_state
+        self.classes_ = np.array([0, 1])
+
+    def fit(self, X, y):
+        self.classes_ = np.unique(y) if len(y) > 0 else np.array([0, 1])
+        return self
+
+    def predict_proba(self, X):
+        rng = np.random.default_rng(self.random_state)
+        p = rng.uniform(0, 1, size=len(X))
+        return np.column_stack([1 - p, p])
+
+    def predict(self, X):
+        proba = self.predict_proba(X)
+        return (proba[:, 1] >= 0.5).astype(int)
 
 
 @dataclass
@@ -127,6 +164,8 @@ def time_series_split_three(
 
 def get_models() -> Dict[str, object]:
     models: Dict[str, object] = {
+        "AlwaysUp": AlwaysUpClassifier(),
+        "Random": RandomClassifier(random_state=42),
         # Ridge 正規化 (L2 懲罰) - 收縮權重去噪
         "LogisticRegression_Ridge": Pipeline(
             steps=[
@@ -254,6 +293,8 @@ def pick_best_model(results: List[ModelResult]) -> ModelResult:
     best = None
     best_score = -np.inf
     for r in results:
+        if r.name in ["AlwaysUp", "Random"]:
+            continue
         bt = backtest_strategy(r)
         perf = performance_report(bt)
         score = perf["strategy_total_return"]
