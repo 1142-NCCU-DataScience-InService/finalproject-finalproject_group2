@@ -113,7 +113,7 @@
               <div class="metric-value" id="metric-ml-sharpe">0.00</div>
             </div>
             <div class="metric-card">
-              <div class="metric-label">策略交易次數</div>
+              <div class="metric-label">策略進場次數 (Entry Count)</div>
               <div class="metric-value" id="metric-ml-trades">0</div>
             </div>
           </div>
@@ -148,7 +148,7 @@
                       <th>策略總報酬</th>
                       <th>最大回撤 (MDD)</th>
                       <th>Sharpe Ratio</th>
-                      <th>交易次數</th>
+                      <th>進場次數 (Entry Count)</th>
                       <th>說明 / 表現評估</th>
                     </tr>
                   </thead>
@@ -210,7 +210,7 @@
           <div class="insight-icon"><i class="fa-solid fa-shield-halved"></i></div>
           <div class="insight-content">
             <h3>交易確認與摩擦成本的影響</h3>
-            <p>1-day 預測週期下，隨機策略因為高頻率進出（平均 9 次）而面臨劇烈的交易摩擦成本損耗（扣除 10 bps），最終產生 -51.6% 的悲慘平均報酬。然而，當使用 5-day 預測週期並搭配「連續兩日確認」機制時，隨機信號的過度換手被大大過濾，交易次數減半，使 Random 策略平均報酬提升至 +9.9%，充分證明了確認機制在控制交易磨損上的強大效用。</p>
+            <p>1-day 預測週期下，隨機策略因為高頻率進出（平均 9 次）而面臨劇烈的交易摩擦成本損耗（扣除 10 bps），最終產生 -51.6% 的悲慘平均報酬。然而，當使用 5-day 預測週期並搭配「連續兩日確認」機制時，隨機信號的過度換手被大大過濾，進場與換手次數大減，使 Random 策略平均報酬提升至 +9.9%，充分證明了確認機制在控制交易磨損上的強大效用。</p>
           </div>
         </div>
       </div>
@@ -305,7 +305,7 @@
         <div class="card" style="background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.05);">
           <h4 style="font-size: 15px; margin-bottom: 10px; color: var(--accent-ml);"><i class="fa-solid fa-circle-dollar-to-slot"></i> 2. 交易摩擦成本</h4>
           <p style="font-size: 13.5px; color: var(--text-secondary);">
-            本系統設定<strong>單次部位變化扣除 10 bps (0.10%)</strong> 的交易摩擦成本。每次調整持倉（如多頭轉平倉、或平倉轉 2x 槓桿）時，都會精確扣除成本。這也是 Random 短線策略會出現高額虧損、而 ML 模型能透過控制交易次數鎖定利潤的原因。
+            本系統設定<strong>單次部位變化扣除 10 bps (0.10%)</strong> 的交易摩擦成本。每次調整持倉（如多頭轉平倉、或平倉轉 2x 槓桿）時，都會精確扣除成本。這也是 Random 短線策略會出現高額虧損、而 ML 模型能透過控制進場與換手頻率鎖定利潤的原因。
           </p>
         </div>
         <div class="card" style="background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.05);">

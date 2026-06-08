@@ -1973,7 +1973,7 @@ window.REPORT_DATA = {
     "006208.TW": {
       "name": "富邦台50 (006208.TW)",
       "best_config": "1d_base",
-      "description": "富邦台50 ETF 的特性是穩定、分散，較不受單一公司事件影響。其最佳機器學習模型為 LogisticRegression_Ridge (1d_base)，策略報酬為 57.0%，微幅勝過被動持有的 54.4%。1-day 短線隨機交易會因頻繁進出導致嚴重的摩擦成本損耗（Random 策略僅獲得 6.8% 報酬），而 ML 模型將交易次數控制在 1 次，展現了極高的穩健度。",
+      "description": "富邦台50 ETF 的特性是穩定、分散，較不受單一公司事件影響。其最佳機器學習模型為 LogisticRegression_Ridge (1d_base)，策略報酬為 57.0%，微幅勝過被動持有的 54.4%。1-day 短線隨機交易會因頻繁進出導致嚴重的摩擦成本損耗（Random 策略僅獲得 6.8% 報酬），而 ML 模型將進場次數控制在 1 次，展現了極高的穩健度。",
       "metrics": {
         "Best ML": {
           "accuracy": "52.23%",
