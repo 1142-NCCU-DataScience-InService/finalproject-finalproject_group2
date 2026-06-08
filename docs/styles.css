@@ -385,6 +385,16 @@ th {
   background: rgba(255, 255, 255, 0.02);
 }
 
+.th-hint {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  color: #6b7280; /* matches --text-muted */
+  margin-top: 4px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
 tbody tr {
   transition: var(--transition-fast);
 }
