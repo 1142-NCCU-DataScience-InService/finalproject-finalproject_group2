@@ -3,335 +3,570 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>技術指標與機器學習交易策略比較報告 - 互動式量化分析儀表板</title>
+  <meta name="description" content="Quantum Trading Strategy Lab - 一個利用機器學習與技術指標進行股價預測與回測量化分析的極致殿堂。">
+  <title>Quantum Strategy Lab | 機器學習與技術指標交易回測系統</title>
   
-  <!-- SEO Meta Tags -->
-  <meta name="description" content="本研究針對技術指標預測策略與機器學習模型（包含 1-day/5-day direction、加入波動度特徵）進行測試集回測，並與 AlwaysUp 總是槓桿與 Random 隨機交易等基準模型進行深度對比分析。">
-  <meta name="author" content="Antigravity Quantitative Strategy Lab">
-  
-  <!-- Font and Icon CDNs -->
+  <!-- Premium Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;600;800&family=Syne:wght@700;800&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  
+  <!-- Icon Libraries -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="./landing.css?v=1">
 </head>
-<body>
+<body class="loading">
 
-  <!-- Top Sticky Header -->
-  <header>
-    <div class="container header-container">
-      <div class="logo-section">
-        <i class="fa-solid fa-chart-line"></i>
-        <span>Quantitative Lab</span>
+  <!-- Custom Magnetic Cursor -->
+  <div class="custom-cursor" id="custom-cursor"></div>
+  <div class="custom-cursor-dot" id="custom-cursor-dot"></div>
+
+  <!-- Dynamic Loader -->
+  <div id="loader" class="loader-overlay">
+    <div class="loader-content">
+      <svg class="loader-svg" viewBox="0 0 100 100" width="120" height="120">
+        <!-- Quantum loading graphic: Rotating circular tracks and pulsing center dot -->
+        <circle class="loader-track-outer" cx="50" cy="50" r="44" stroke="rgba(255,255,255,0.05)" stroke-width="2" fill="none" />
+        <circle class="loader-ring-outer" cx="50" cy="50" r="44" stroke="currentColor" stroke-width="2.5" fill="none" stroke-dasharray="70 150" />
+        <circle class="loader-ring-mid" cx="50" cy="50" r="32" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="50 100" />
+        <circle class="loader-ring-inner" cx="50" cy="50" r="20" stroke="currentColor" stroke-width="1.5" fill="none" stroke-dasharray="30 50" />
+        <circle class="loader-center-dot" cx="50" cy="50" r="6" fill="currentColor" />
+      </svg>
+      <div class="loader-text-wrapper">
+        <div class="loader-progress">0%</div>
+        <div class="loader-sub">ESTABLISHING QUANT QUANTUM NETWORKS</div>
       </div>
-      <nav class="header-nav">
-        <a href="#dashboard-section" class="active">個股分析儀表板</a>
-        <a href="#summary-section">整體結果摘要</a>
-        <a href="#features-section">特徵工程設計</a>
-        <a href="#methodology-section">回測方法論</a>
+    </div>
+  </div>
+
+  <!-- Header Navigation -->
+  <header class="nav-header">
+    <div class="nav-container">
+      <a href="#hero" class="nav-logo magnetic-target">
+        <svg class="logo-svg" viewBox="0 0 100 100" width="36" height="36">
+          <!-- Geometric graph representing trading candlesticks and AI connections -->
+          <rect x="25" y="40" width="12" height="35" rx="2" fill="currentColor" opacity="0.6"/>
+          <line x1="31" y1="25" x2="31" y2="85" stroke="currentColor" stroke-width="3" />
+          
+          <rect x="44" y="25" width="12" height="40" rx="2" fill="currentColor" />
+          <line x1="50" y1="10" x2="50" y2="75" stroke="currentColor" stroke-width="3" />
+          
+          <rect x="63" y="50" width="12" height="25" rx="2" fill="currentColor" opacity="0.8"/>
+          <line x1="69" y1="35" x2="69" y2="85" stroke="currentColor" stroke-width="3" />
+        </svg>
+        <span class="logo-text">QUANTUM LAB</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#hero" class="nav-link magnetic-target">OVERVIEW</a>
+        <a href="#showcase" class="nav-link magnetic-target">ML CORE</a>
+        <a href="#stats-matrix" class="nav-link magnetic-target">PERFORMANCE</a>
+        <a href="#explorer" class="nav-link magnetic-target">DELIVERABLES</a>
       </nav>
+      <button class="menu-toggle" aria-label="Toggle Menu">
+        <span class="line"></span>
+        <span class="line"></span>
+      </button>
     </div>
   </header>
 
-  <!-- Hero / Banner Section -->
-  <section class="hero-section">
+  <!-- Mobile Dropdown Menu -->
+  <div class="mobile-menu">
+    <div class="mobile-menu-inner">
+      <a href="#hero" class="mobile-nav-link">OVERVIEW</a>
+      <a href="#showcase" class="mobile-nav-link">ML CORE</a>
+      <a href="#stats-matrix" class="mobile-nav-link">PERFORMANCE</a>
+      <a href="#explorer" class="mobile-nav-link">DELIVERABLES</a>
+    </div>
+  </div>
+
+  <!-- Scroll Progress Bar -->
+  <div class="scroll-progress-container">
+    <div class="scroll-progress-bar" id="progress-bar"></div>
+  </div>
+
+  <!-- Hero Landing Section -->
+  <section id="hero" class="hero-section">
+    <div class="hero-bg-stars"></div>
+    <div class="hero-glow-back"></div>
+    
+    <!-- Parallax Layers -->
+    <div class="hero-layer hero-layer-back" data-depth="0.1">
+      <div class="grid-overlay"></div>
+    </div>
+    
+    <div class="hero-layer hero-layer-text" data-depth="0.25">
+      <h1 class="hero-title">
+        <span class="title-outline">QUANTUM</span>
+        <span class="title-solid">SYSTEMS</span>
+      </h1>
+      <p class="hero-subtitle">Technical Indicator Forecasting & Machine Learning Trading System</p>
+    </div>
+    
+    <div class="hero-layer hero-layer-mid" data-depth="0.5">
+      <div class="hero-chart-img-wrap">
+        <img src="./quantum_hero.png" alt="Quantum Neon Stock Chart" class="hero-chart-img" />
+      </div>
+    </div>
+    
+    <div class="hero-layer hero-layer-front" data-depth="0.7">
+      <div class="fog-overlay"></div>
+    </div>
+    
+    <div class="scroll-indicator">
+      <span class="scroll-text">EXPLORE RESEARCH</span>
+      <svg class="scroll-mouse" viewBox="0 0 24 36" width="20" height="30">
+        <rect x="2" y="2" width="20" height="32" rx="10" stroke="currentColor" stroke-width="2" fill="none" />
+        <circle cx="12" cy="10" r="2" class="scroll-wheel" fill="currentColor" />
+      </svg>
+    </div>
+  </section>
+
+  <!-- Showcase Section -->
+  <section id="showcase" class="showcase-section">
+    
+    <!-- Model 1: Logistic Regression -->
+    <div class="showcase-row" id="model-logreg" data-bg="#0a121e" data-theme="blue">
+      <div class="bg-number" data-speed="-0.15">51.9%</div>
+      <div class="showcase-container">
+        <div class="showcase-visual">
+          <div class="img-reveal-container">
+            <!-- 3D style SVG representing Linear Logistic Regression -->
+            <svg viewBox="0 0 200 200" class="showcase-svg">
+              <defs>
+                <linearGradient id="blue-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.8" />
+                  <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0.2" />
+                </linearGradient>
+              </defs>
+              <grid class="grid-lines" />
+              <!-- Decision Boundary -->
+              <line x1="30" y1="170" x2="170" y2="30" stroke="#0ea5e9" stroke-width="4" stroke-dasharray="4 4" />
+              <!-- Points -->
+              <circle cx="50" cy="70" r="8" fill="#3b82f6" filter="drop-shadow(0 0 8px #3b82f6)" />
+              <circle cx="70" cy="50" r="8" fill="#3b82f6" filter="drop-shadow(0 0 8px #3b82f6)" />
+              <circle cx="100" cy="40" r="8" fill="#3b82f6" filter="drop-shadow(0 0 8px #3b82f6)" />
+              
+              <circle cx="110" cy="150" r="8" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.4)" />
+              <circle cx="140" cy="130" r="8" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.4)" />
+              <circle cx="160" cy="100" r="8" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.4)" />
+            </svg>
+          </div>
+          <div class="visual-decor">
+            <svg class="decor-circle" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="45" stroke="rgba(14, 165, 233, 0.2)" stroke-width="1" fill="none" stroke-dasharray="5 5" />
+            </svg>
+          </div>
+        </div>
+        <div class="showcase-details">
+          <div class="detail-header">
+            <span class="pokemon-num">MODEL 01</span>
+            <span class="badge type-blue">Linear / Ridge</span>
+          </div>
+          <h2 class="pokemon-name reveal-text">Logistic Regression</h2>
+          <p class="pokemon-desc reveal-fade">
+            以 L2 Ridge 正則化懲罰項建構的線性分類基石。模型將複雜的多維技術指標投射至超平面，輸出極具可解釋性的機率預測值。在動態劇烈的回測期中，提供穩定的特徵權重結構，有效避免模型因短線突發噪聲而產生過擬合。
+          </p>
+          <div class="pokemon-stats-summary reveal-fade">
+            <div class="stat-item"><span class="label">REGULARIZATION</span><span class="value">L2 Penalty</span></div>
+            <div class="stat-item"><span class="label">INTERPRETABILITY</span><span class="value">Excellent</span></div>
+            <div class="stat-item"><span class="label">SUITABILITY</span><span class="value">Baseline</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Model 2: Random Forest -->
+    <div class="showcase-row row-reverse" id="model-rf" data-bg="#100b1a" data-theme="purple">
+      <div class="bg-number" data-speed="-0.15">54.1%</div>
+      <div class="showcase-container">
+        <div class="showcase-details">
+          <div class="detail-header">
+            <span class="pokemon-num">MODEL 02</span>
+            <span class="badge type-purple">Ensemble Trees</span>
+          </div>
+          <h2 class="pokemon-name reveal-text">Random Forest</h2>
+          <p class="pokemon-desc reveal-fade">
+            利用多棵決策樹整合而成的非線性特徵森林。透過 Bagging 機制隨機抽樣特徵與數據，學習市場在超買區（RSI）與動能交叉（MACD）時的深層非線性規則。在 5-day 中期策略預測中，對於抑制震盪雜訊、捕捉多重交易信號的相互印證具有顯著成效。
+          </p>
+          <div class="pokemon-stats-summary reveal-fade">
+            <div class="stat-item"><span class="label">ENSEMBLE TYPE</span><span class="value">Bagging Trees</span></div>
+            <div class="stat-item"><span class="label">NON-LINEARITY</span><span class="value">High</span></div>
+            <div class="stat-item"><span class="label">NOISE REDUCTION</span><span class="value">Robust</span></div>
+          </div>
+        </div>
+        <div class="showcase-visual">
+          <div class="img-reveal-container">
+            <!-- 3D style SVG representing Random Forest / Decision Trees -->
+            <svg viewBox="0 0 200 200" class="showcase-svg">
+              <!-- Tree Nodes -->
+              <line x1="100" y1="30" x2="60" y2="80" stroke="#a855f7" stroke-width="2" opacity="0.6"/>
+              <line x1="100" y1="30" x2="140" y2="80" stroke="#a855f7" stroke-width="2" opacity="0.6"/>
+              <line x1="60" y1="80" x2="35" y2="130" stroke="#a855f7" stroke-width="2" opacity="0.6"/>
+              <line x1="60" y1="80" x2="85" y2="130" stroke="#a855f7" stroke-width="2" opacity="0.6"/>
+              <line x1="140" y1="80" x2="115" y2="130" stroke="#a855f7" stroke-width="2" opacity="0.6"/>
+              <line x1="140" y1="80" x2="165" y2="130" stroke="#a855f7" stroke-width="2" opacity="0.6"/>
+              
+              <!-- Vertex nodes -->
+              <circle cx="100" cy="30" r="10" fill="#a855f7" filter="drop-shadow(0 0 8px #a855f7)" />
+              <circle cx="60" cy="80" r="8" fill="#a855f7" filter="drop-shadow(0 0 6px #a855f7)" />
+              <circle cx="140" cy="80" r="8" fill="#a855f7" filter="drop-shadow(0 0 6px #a855f7)" />
+              
+              <circle cx="35" cy="130" r="6" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" />
+              <circle cx="85" cy="130" r="6" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" />
+              <circle cx="115" cy="130" r="6" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" />
+              <circle cx="165" cy="130" r="6" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" />
+            </svg>
+          </div>
+          <div class="visual-decor">
+            <svg class="decor-circle" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="45" stroke="rgba(168, 85, 247, 0.2)" stroke-width="1" fill="none" stroke-dasharray="5 5" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Model 3: XGBoost -->
+    <div class="showcase-row" id="model-xgb" data-bg="#160c07" data-theme="orange">
+      <div class="bg-number" data-speed="-0.15">52.9%</div>
+      <div class="showcase-container">
+        <div class="showcase-visual">
+          <div class="img-reveal-container">
+            <!-- 3D style SVG representing Gradient Boosting / XGBoost -->
+            <svg viewBox="0 0 200 200" class="showcase-svg">
+              <!-- Gradient boosting sequences / weights -->
+              <!-- Sequential boosting paths -->
+              <path d="M 30,100 Q 60,60 100,100 T 170,100" fill="none" stroke="rgba(249, 115, 22, 0.2)" stroke-width="4" stroke-dasharray="5 5" />
+              <path d="M 30,120 Q 60,80 100,120 T 170,120" fill="none" stroke="#f97316" stroke-width="3" filter="drop-shadow(0 0 6px #f97316)" />
+              
+              <circle cx="30" cy="120" r="6" fill="#f97316" />
+              <circle cx="75" cy="95" r="7" fill="#f97316" filter="drop-shadow(0 0 6px #f97316)" />
+              <circle cx="125" cy="125" r="7" fill="#f97316" filter="drop-shadow(0 0 6px #f97316)" />
+              <circle cx="170" cy="120" r="6" fill="#f97316" />
+            </svg>
+          </div>
+          <div class="visual-decor">
+            <svg class="decor-circle" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="45" stroke="rgba(249, 115, 22, 0.2)" stroke-width="1" fill="none" stroke-dasharray="5 5" />
+            </svg>
+          </div>
+        </div>
+        <div class="showcase-details">
+          <div class="detail-header">
+            <span class="pokemon-num">MODEL 03</span>
+            <span class="badge type-orange">Gradient Boosting</span>
+          </div>
+          <h2 class="pokemon-name reveal-text">XGBoost Classifier</h2>
+          <p class="pokemon-desc reveal-fade">
+            基於梯度提升架構的極致機器學習模型。透過對殘差的二階泰勒展開與正則化剪枝，精準剔除共線性技術指標中的雜訊。在與「波動度特徵」相結合後，XGBoost 模型能細緻辨識出市場多頭強弱度的臨界點，是測試集中驅動超額回報的終極核心。
+          </p>
+          <div class="pokemon-stats-summary reveal-fade">
+            <div class="stat-item"><span class="label">OPTIMIZATION</span><span class="value">Gradient & Hessian</span></div>
+            <div class="stat-item"><span class="label">BOOSTING TYPE</span><span class="value">Sequential</span></div>
+            <div class="stat-item"><span class="label">PREDICTIVE VALUE</span><span class="value">State-of-the-Art</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Matrix Section -->
+  <section id="stats-matrix" class="stats-section">
+    <div class="stats-bg-glow"></div>
     <div class="container">
-      <div class="badge">
-        <i class="fa-solid fa-graduation-cap"></i>
-        資料科學與金融科技量化報告
-      </div>
-      <h1>技術指標預測與機器學習交易策略比較報告</h1>
-      <p>針對技術指標預測模型進行測試集（2024-2025 年）回測與基準模型（AlwaysUp 2x 槓桿 / Random 隨機交易）對比，探討預測週期（1-day / 5-day）與波動度特徵（Volatility Features）對實際策略獲利與風控的影響。</p>
-    </div>
-  </section>
-
-  <!-- Section 1: Dashboard Section -->
-  <section id="dashboard-section" class="container">
-    <div class="card" style="padding: 30px; margin-bottom: 40px;">
-      <div class="section-title-wrap">
-        <h2><i class="fa-solid fa-sliders" style="color: var(--accent-ml); margin-right: 10px;"></i>個股量化分析儀表板</h2>
-        <p>請從側邊欄選擇個股標的，右側將自動更新該標的在最佳 ML 設定下的回測累積淨值曲線、策略統計指標與詳細對比表。</p>
-      </div>
-
-      <div class="dashboard-layout">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar">
-          <div class="sidebar-title">個股標的選擇</div>
-          <button class="sidebar-btn active" data-ticker="2330.TW">
-            <span>台積電</span>
-            <span class="ticker-symbol">2330.TW</span>
-          </button>
-          <button class="sidebar-btn" data-ticker="006208.TW">
-            <span>富邦台50</span>
-            <span class="ticker-symbol">006208.TW</span>
-          </button>
-          <button class="sidebar-btn" data-ticker="0050.TW">
-            <span>元大台灣50</span>
-            <span class="ticker-symbol">0050.TW</span>
-          </button>
-          <button class="sidebar-btn" data-ticker="2317.TW">
-            <span>鴻海</span>
-            <span class="ticker-symbol">2317.TW</span>
-          </button>
-          <button class="sidebar-btn" data-ticker="2454.TW">
-            <span>聯發科</span>
-            <span class="ticker-symbol">2454.TW</span>
-          </button>
-          <button class="sidebar-btn" data-ticker="2308.TW">
-            <span>台達電</span>
-            <span class="ticker-symbol">2308.TW</span>
-          </button>
-        </aside>
-
-        <!-- Main Dashboard View -->
-        <main class="dashboard-content">
-          <!-- Active Ticker Info -->
-          <div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--card-border);">
-            <h3 id="active-ticker-name" style="font-size: 24px; margin-bottom: 6px;">台積電 (2330.TW)</h3>
-            <p id="active-ticker-desc" style="color: var(--text-secondary); font-size: 14.5px;">台積電描述載入中...</p>
+      <div class="stats-grid">
+        <div class="stats-content">
+          <span class="section-tag reveal-fade">BACKTESTING ANALYSIS</span>
+          <h2 class="section-title reveal-text">Performance Matrix Core</h2>
+          <p class="section-desc reveal-fade">
+            解析 4 種機器學習模型配置在測試集上的綜合績效。點擊下方配置按鈕，雷達矩陣會以動態幾何圖形呈現分類指標、風控能力與報酬表現的平衡狀態。
+          </p>
+          
+          <!-- Selector Tabs -->
+          <div class="stats-selector reveal-fade">
+            <button class="selector-btn active magnetic-target" data-config="1d_base">1D BASE</button>
+            <button class="selector-btn magnetic-target" data-config="1d_vol">1D VOL</button>
+            <button class="selector-btn magnetic-target" data-config="5d_base">5D BASE</button>
+            <button class="selector-btn magnetic-target" data-config="5d_vol">5D VOL</button>
           </div>
 
-          <!-- Metrics Cards Row -->
-          <div class="metrics-grid">
-            <div class="metric-card">
-              <div class="metric-label">最佳 ML 策略報酬</div>
-              <div class="metric-value positive" id="metric-ml-return">0.00%</div>
-            </div>
-            <div class="metric-card">
-              <div class="metric-label">被動持有報酬 (B&H)</div>
-              <div class="metric-value positive" id="metric-bh-return">0.00%</div>
-            </div>
-            <div class="metric-card">
-              <div class="metric-label">策略最大回撤 (MDD)</div>
-              <div class="metric-value negative" id="metric-ml-mdd">-0.00%</div>
-            </div>
-            <div class="metric-card">
-              <div class="metric-label">策略 Sharpe 值</div>
-              <div class="metric-value" id="metric-ml-sharpe">0.00</div>
-            </div>
-            <div class="metric-card">
-              <div class="metric-label">策略進場次數 (Entry Count)</div>
-              <div class="metric-value" id="metric-ml-trades">0</div>
-            </div>
-          </div>
-
-          <!-- Chart and Details Card -->
-          <div style="display: grid; grid-template-columns: 1fr; gap: 24px;">
-            <div class="card" style="background: rgba(0, 0, 0, 0.15);">
-              <div class="chart-header">
-                <h4 style="font-size: 16px;"><i class="fa-solid fa-chart-area" style="color: var(--accent-ml); margin-right: 8px;"></i>測試集累積報酬淨值曲線 (2024 - 2025)</h4>
-                <div class="chart-legends">
-                  <div class="legend-item"><span class="legend-color ml"></span><span>最佳 ML 策略</span></div>
-                  <div class="legend-item"><span class="legend-color alwaysup"></span><span>AlwaysUp (2x槓桿)</span></div>
-                  <div class="legend-item"><span class="legend-color random"></span><span>Random (隨機交易)</span></div>
-                  <div class="legend-item"><span class="legend-color bh"></span><span>Buy & Hold</span></div>
-                </div>
+          <!-- Individual Stats List -->
+          <div class="stats-list reveal-fade">
+            <div class="stat-bar-item" data-index="0">
+              <div class="bar-header">
+                <span class="bar-name">ACCURACY (預測準確度)</span>
+                <span class="bar-val" id="val-accuracy">51.3%</span>
               </div>
-              <div class="chart-wrapper">
-                <canvas id="equity-chart"></canvas>
-              </div>
+              <div class="bar-track"><div class="bar-fill" id="fill-accuracy"></div></div>
             </div>
-
-            <!-- Detail Table -->
-            <div class="card" style="background: rgba(0, 0, 0, 0.15);">
-              <h4 style="font-size: 16px; margin-bottom: 12px;"><i class="fa-solid fa-list-check" style="color: var(--accent-ml); margin-right: 8px;"></i>各策略指標詳細對比表</h4>
-              <div class="table-wrapper">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>策略 / 模型</th>
-                      <th>測試集 Accuracy<br><span class="th-hint">越大越好 ↑</span></th>
-                      <th>測試集 F1-score<br><span class="th-hint">越大越好 ↑</span></th>
-                      <th>策略總報酬<br><span class="th-hint">越大越好 ↑</span></th>
-                      <th>最大回撤 (MDD)<br><span class="th-hint">絕對值越小越好 ↓</span></th>
-                      <th>Sharpe Ratio<br><span class="th-hint">越大越好 ↑</span></th>
-                      <th>進場次數 (Entry Count)<br><span class="th-hint">適中為佳 (評估頻率)</span></th>
-                      <th>說明 / 表現評估</th>
-                    </tr>
-                  </thead>
-                  <tbody id="ticker-comparison-rows">
-                    <!-- Dynamic Rows Insertion -->
-                  </tbody>
-                </table>
+            <div class="stat-bar-item" data-index="1">
+              <div class="bar-header">
+                <span class="bar-name">F1 SCORE (分類綜合得分)</span>
+                <span class="bar-val" id="val-f1">43.1%</span>
               </div>
+              <div class="bar-track"><div class="bar-fill" id="fill-f1"></div></div>
             </div>
-          </div>
-        </main>
-      </div>
-    </div>
-  </section>
-
-  <!-- Section 2: Overall Results (整體結果摘要) -->
-  <section id="summary-section" class="container summary-table-section">
-    <div class="card" style="padding: 30px;">
-      <div class="section-title-wrap">
-        <h2><i class="fa-solid fa-ranking-star" style="color: var(--accent-ml); margin-right: 10px;"></i>四組訓練設定與基準模型平均對比</h2>
-        <p>此表展示所有 6 檔標的在 4 種不同特徵/週期設定下的平均表現，並加入了基準模型 AlwaysUp (2x槓桿) 與 Random (隨機) 的橫向對比。</p>
-      </div>
-
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th rowspan="2">訓練 / 預測設定</th>
-              <th colspan="4">最佳機器學習模型 (平均)</th>
-              <th colspan="2">AlwaysUp 基準模型 (2x槓桿)</th>
-              <th colspan="2">Random 隨機基準模型 (平均)</th>
-            </tr>
-            <tr>
-              <th>分類 Accuracy</th>
-              <th>F1-score</th>
-              <th>策略報酬</th>
-              <th>超額報酬</th>
-              <th>策略報酬</th>
-              <th>超額報酬</th>
-              <th>策略報酬</th>
-              <th>超額報酬</th>
-            </tr>
-          </thead>
-          <tbody id="overall-summary-rows">
-            <!-- Dynamic Insertion -->
-          </tbody>
-        </table>
-      </div>
-
-      <div class="insights-grid">
-        <div class="insight-card">
-          <div class="insight-icon"><i class="fa-solid fa-bolt"></i></div>
-          <div class="insight-content">
-            <h3>AlwaysUp 槓桿策略的市場背景</h3>
-            <p>在回測期間（2024-2025 年），台灣股市適逢強勁的半導體與科技股單邊牛市。AlwaysUp 模型預測機率恆為 1.0，這會持續觸發 2x 槓桿持倉。在強烈單邊上升中，雙倍槓桿讓 AlwaysUp 取得了極高的累積報酬（平均超過 170%），但這也伴隨著雙倍的市場最大回撤與波動風險。如果股市反轉，2x 槓桿可能帶來永久性的資金重創。</p>
+            <div class="stat-bar-item" data-index="2">
+              <div class="bar-header">
+                <span class="bar-name">STRATEGY RETURN (策略累積報酬)</span>
+                <span class="bar-val" id="val-return">57.8%</span>
+              </div>
+              <div class="bar-track"><div class="bar-fill" id="fill-return"></div></div>
+            </div>
+            <div class="stat-bar-item" data-index="3">
+              <div class="bar-header">
+                <span class="bar-name">RISK CONTROL (最大回撤風控)</span>
+                <span class="bar-val" id="val-risk">普通 (-48.2%)</span>
+              </div>
+              <div class="bar-track"><div class="bar-fill" id="fill-risk"></div></div>
+            </div>
+            <div class="stat-bar-item" data-index="4">
+              <div class="bar-header">
+                <span class="bar-name">SHARPE RATIO (夏普比率評級)</span>
+                <span class="bar-val" id="val-sharpe">0.82</span>
+              </div>
+              <div class="bar-track"><div class="bar-fill" id="fill-sharpe"></div></div>
+            </div>
+            <div class="stat-bar-item" data-index="5">
+              <div class="bar-header">
+                <span class="bar-name">COST EFFICIENCY (摩擦成本控制)</span>
+                <span class="bar-val" id="val-cost">偏低 (高換手)</span>
+              </div>
+              <div class="bar-track"><div class="bar-fill" id="fill-cost"></div></div>
+            </div>
           </div>
         </div>
-        <div class="insight-card alwaysup">
-          <div class="insight-icon"><i class="fa-solid fa-shield-halved"></i></div>
-          <div class="insight-content">
-            <h3>交易確認與摩擦成本的影響</h3>
-            <p>1-day 預測週期下，隨機策略因為高頻率進出（平均 9 次）而面臨劇烈的交易摩擦成本損耗（扣除 10 bps），最終產生 -51.6% 的悲慘平均報酬。然而，當使用 5-day 預測週期並搭配「連續兩日確認」機制時，隨機信號的過度換手被大大過濾，進場與換手次數大減，使 Random 策略平均報酬提升至 +9.9%，充分證明了確認機制在控制交易磨損上的強大效用。</p>
+
+        <div class="stats-visual reveal-fade">
+          <div class="radar-container">
+            <!-- Dynamic SVG Radar Chart -->
+            <svg class="radar-svg" viewBox="0 0 500 500">
+              <!-- Radial grid backgrounds -->
+              <circle cx="250" cy="250" r="180" class="radar-grid" />
+              <circle cx="250" cy="250" r="144" class="radar-grid" />
+              <circle cx="250" cy="250" r="108" class="radar-grid" />
+              <circle cx="250" cy="250" r="72" class="radar-grid" />
+              <circle cx="250" cy="250" r="36" class="radar-grid" />
+              
+              <!-- Axes lines -->
+              <line x1="250" y1="250" x2="250" y2="70" class="radar-axis-line" />
+              <line x1="250" y1="250" x2="405.9" y2="160" class="radar-axis-line" />
+              <line x1="250" y1="250" x2="405.9" y2="340" class="radar-axis-line" />
+              <line x1="250" y1="250" x2="250" y2="430" class="radar-axis-line" />
+              <line x1="250" y1="250" x2="94.1" y2="340" class="radar-axis-line" />
+              <line x1="250" y1="250" x2="94.1" y2="160" class="radar-axis-line" />
+              
+              <!-- Polygon fill representing model values -->
+              <polygon id="radar-poly" points="250,70 250,250 250,250 250,250 250,250 250,250" />
+              
+              <!-- Radar points (vertex dots) -->
+              <g class="radar-vertices">
+                <circle id="v-accuracy" cx="250" cy="250" r="5" class="radar-vertex" />
+                <circle id="v-f1" cx="250" cy="250" r="5" class="radar-vertex" />
+                <circle id="v-return" cx="250" cy="250" r="5" class="radar-vertex" />
+                <circle id="v-risk" cx="250" cy="250" r="5" class="radar-vertex" />
+                <circle id="v-sharpe" cx="250" cy="250" r="5" class="radar-vertex" />
+                <circle id="v-cost" cx="250" cy="250" r="5" class="radar-vertex" />
+              </g>
+
+              <!-- Labels -->
+              <text x="250" y="55" class="radar-label" text-anchor="middle">ACCURACY</text>
+              <text x="420" y="155" class="radar-label" text-anchor="start">F1 SCORE</text>
+              <text x="420" y="355" class="radar-label" text-anchor="start">RETURN</text>
+              <text x="250" y="450" class="radar-label" text-anchor="middle">RISK CONTROL</text>
+              <text x="80" y="355" class="radar-label" text-anchor="end">SHARPE RATIO</text>
+              <text x="80" y="155" class="radar-label" text-anchor="end">COST EFFIC.</text>
+            </svg>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Section 3: Feature Engineering (特徵工程設計) -->
-  <section id="features-section" class="container" style="margin-top: 60px;">
-    <div class="card" style="padding: 30px;">
-      <div class="section-title-wrap">
-        <h2><i class="fa-solid fa-gears" style="color: var(--accent-ml); margin-right: 10px;"></i>特徵工程與波動度特徵設計</h2>
-        <p>本研究均使用 OHLCV（開盤價、最高價、最低價、收盤價、成交量）日資料，不直接使用絕對價格，而是轉換成技術指標與相對變化，以避免模型僅記住某一價格水位。</p>
+  <!-- Explorer Catalog Section (Deliverables) -->
+  <section id="explorer" class="explorer-section">
+    <div class="container">
+      <div class="explorer-header">
+        <span class="section-tag reveal-fade">PROJECT ARTIFACTS</span>
+        <h2 class="section-title reveal-text">Research Deliverables</h2>
+        <p class="explorer-subtext reveal-fade">
+          本量化系統包含互動式回測儀表板、學術級分析報告與說明投影片。您可在此存取完整成果。
+        </p>
       </div>
 
-      <div class="feature-box">
-        <!-- Base Features -->
-        <div class="feature-list">
-          <div class="feature-list-title"><i class="fa-solid fa-chart-simple"></i>基礎技術特徵 (Base Features - 9 個)</div>
-          <div class="feature-item">
-            <span class="feature-name">return_1d</span>
-            <span class="feature-desc">前一日到當日的日報酬率</span>
+      <!-- Cards Grid -->
+      <div class="explorer-grid reveal-fade">
+        
+        <!-- Card 1: Interactive Dashboard -->
+        <a href="./dashboard/index.html" class="pokemon-card project-card">
+          <div class="card-glow"></div>
+          <div class="card-inner">
+            <span class="card-number">01</span>
+            <div class="card-icon-wrap">
+              <i class="fa-solid fa-chart-line card-proj-icon"></i>
+            </div>
+            <h3 class="card-name">互動式回測儀表板</h3>
+            <p class="card-proj-desc">
+              點擊進入 Chart.js 驅動的數據平台。支持台積電、鴻海、聯發科等多檔藍籌股的回測收益曲線、MDD 以及各配置的橫向比較。
+            </p>
+            <div class="card-badges">
+              <span class="badge-mini active-html">HTML5</span>
+              <span class="badge-mini active-js">Chart.js</span>
+            </div>
           </div>
-          <div class="feature-item">
-            <span class="feature-name">ma_ratio</span>
-            <span class="feature-desc">5日均線 / 20日均線，表示短期趨勢相對於中期趨勢的位置</span>
+        </a>
+
+        <!-- Card 2: Strategy PDF Report -->
+        <a href="./technical_strategy_report.pdf" target="_blank" class="pokemon-card project-card">
+          <div class="card-glow"></div>
+          <div class="card-inner">
+            <span class="card-number">02</span>
+            <div class="card-icon-wrap">
+              <i class="fa-solid fa-file-pdf card-proj-icon"></i>
+            </div>
+            <h3 class="card-name">量化研究 PDF 報告</h3>
+            <p class="card-proj-desc">
+              完整下載學術格式的書面報告，詳細論述機器學習模型結構、回測滑點、交易確認機制以及大盤牛市背景的策略有效性。
+            </p>
+            <div class="card-badges">
+              <span class="badge-mini type-pdf">PDF Doc</span>
+              <span class="badge-mini type-academic">Academic</span>
+            </div>
           </div>
-          <div class="feature-item">
-            <span class="feature-name">bias_5 / bias_20</span>
-            <span class="feature-desc">收盤價相對 5日與 20日均線的偏離程度</span>
+        </a>
+
+        <!-- Card 3: Markdown Report -->
+        <a href="./technical_strategy_report.md" target="_blank" class="pokemon-card project-card">
+          <div class="card-glow"></div>
+          <div class="card-inner">
+            <span class="card-number">03</span>
+            <div class="card-icon-wrap">
+              <i class="fa-solid fa-file-lines card-proj-icon"></i>
+            </div>
+            <h3 class="card-name">技術分析 Markdown</h3>
+            <p class="card-proj-desc">
+              在瀏覽器直接閱讀技術特徵表格與資料切分方案。列出 return_1d、ma_ratio、volatility_20 等 13 個核心變數公式。
+            </p>
+            <div class="card-badges">
+              <span class="badge-mini type-md">Markdown</span>
+              <span class="badge-mini type-clean">Clean Notes</span>
+            </div>
           </div>
-          <div class="feature-item">
-            <span class="feature-name">vol_chg</span>
-            <span class="feature-desc">成交量日變化率，捕捉量能是否放大或縮小</span>
+        </a>
+
+        <!-- Card 4: Presentation Slide -->
+        <a href="https://mail3nccu-my.sharepoint.com/:p:/g/personal/114971013_mail3_nccu_tw/IQBTL-6ojuKiRLT4AkNLl10WAVqQVDf0TCkPyxwRcJ5tTyU?e=HEuNMa" target="_blank" class="pokemon-card project-card">
+          <div class="card-glow"></div>
+          <div class="card-inner">
+            <span class="card-number">04</span>
+            <div class="card-icon-wrap">
+              <i class="fa-solid fa-person-chalkboard card-proj-icon"></i>
+            </div>
+            <h3 class="card-name">成果簡報 / 影片連結</h3>
+            <p class="card-proj-desc">
+              存取我們小組最終成果發表投影片（PowerPoint/PDF）及線上演示錄影連結，快速了解專案立項與展示亮點。
+            </p>
+            <div class="card-badges">
+              <span class="badge-mini type-slide">Slides</span>
+              <span class="badge-mini type-youtube">Video</span>
+            </div>
           </div>
-          <div class="feature-item">
-            <span class="feature-name">rsi_14</span>
-            <span class="feature-desc">14日相對強弱指標，衡量超買、超賣與動能狀態</span>
-          </div>
-          <div class="feature-item">
-            <span class="feature-name">macd / signal / hist</span>
-            <span class="feature-desc">百分比形式計算的 MACD、訊號線與柱狀圖</span>
+        </a>
+
+        <!-- Card 5: Streamlit Application Instructions -->
+        <div class="pokemon-card project-card no-link">
+          <div class="card-glow"></div>
+          <div class="card-inner">
+            <span class="card-number">05</span>
+            <div class="card-icon-wrap">
+              <i class="fa-brands fa-python card-proj-icon"></i>
+            </div>
+            <h3 class="card-name">本機 Streamlit 啟動</h3>
+            <p class="card-proj-desc">
+              本專案支援以 Streamlit 於本機進行動態調參，請於專案根目錄下執行：
+              <code class="terminal-code">streamlit run code/technical_app.py</code>
+            </p>
+            <div class="card-badges">
+              <span class="badge-mini type-streamlit">Streamlit</span>
+              <span class="badge-mini type-python">Python 3.9+</span>
+            </div>
           </div>
         </div>
 
-        <!-- Volatility Features -->
-        <div class="feature-list">
-          <div class="feature-list-title"><i class="fa-solid fa-wave-square"></i>波動與風險狀態特徵 (Volatility Features - 新增 4 個)</div>
-          <div class="feature-item">
-            <span class="feature-name">atr_ratio_14</span>
-            <span class="feature-desc">14日 ATR / 收盤價，衡量近期每日價格震盪幅度相對股價的大小</span>
+        <!-- Card 6: Git Source Directory -->
+        <a href="https://github.com/1142-NCCU-DataScience-InService/finalproject-finalproject_group2/tree/main/code" target="_blank" class="pokemon-card project-card">
+          <div class="card-glow"></div>
+          <div class="card-inner">
+            <span class="card-number">06</span>
+            <div class="card-icon-wrap">
+              <i class="fa-brands fa-github card-proj-icon"></i>
+            </div>
+            <h3 class="card-name">Python 核心源碼</h3>
+            <p class="card-proj-desc">
+              瀏覽本專案之開源核心演算法庫。包含 `technical_system.py` 與 `technical_app.py`，程式碼架構整潔易擴展。
+            </p>
+            <div class="card-badges">
+              <span class="badge-mini type-code">Source Code</span>
+              <span class="badge-mini type-scikit">Scikit-Learn</span>
+            </div>
           </div>
-          <div class="feature-item">
-            <span class="feature-name">volatility_20</span>
-            <span class="feature-desc">20日日報酬率之標準差，描述近期收益率波動程度</span>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Premium Footer -->
+  <footer class="footer-section">
+    <div class="footer-glow"></div>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="nav-logo">
+            <svg class="logo-svg footer-logo" viewBox="0 0 100 100" width="45" height="45">
+              <rect x="25" y="40" width="12" height="35" rx="2" fill="currentColor" opacity="0.6"/>
+              <line x1="31" y1="25" x2="31" y2="85" stroke="currentColor" stroke-width="3" />
+              <rect x="44" y="25" width="12" height="40" rx="2" fill="currentColor" />
+              <line x1="50" y1="10" x2="50" y2="75" stroke="currentColor" stroke-width="3" />
+              <rect x="63" y="50" width="12" height="25" rx="2" fill="currentColor" opacity="0.8"/>
+              <line x1="69" y1="35" x2="69" y2="85" stroke="currentColor" stroke-width="3" />
+            </svg>
+            <span class="logo-text">QUANTUM LAB</span>
           </div>
-          <div class="feature-item">
-            <span class="feature-name">volume_ratio_20</span>
-            <span class="feature-desc">當日成交量 / 20日平均成交量，用以觀察量能是否異常放大</span>
+          <p class="footer-tagline">Decoding market mechanics with machine learning and premium visualization architectures.</p>
+        </div>
+        <div class="footer-links-group">
+          <div class="footer-links-col">
+            <h4>DIRECTORIES</h4>
+            <a href="#hero" class="footer-link">Overview</a>
+            <a href="#showcase" class="footer-link">Machine Learning</a>
+            <a href="#stats-matrix" class="footer-link">Performance Core</a>
+            <a href="#explorer" class="footer-link">Project Deliverables</a>
           </div>
-          <div class="feature-item">
-            <span class="feature-name">bb_width_20</span>
-            <span class="feature-desc">20日布林通道寬度 / 中線，衡量價格震盪區間是否擴張</span>
+          <div class="footer-links-col">
+            <h4>RESOURCES</h4>
+            <a href="https://finance.yahoo.com/" target="_blank" rel="noopener" class="footer-link">Yahoo Finance API</a>
+            <a href="https://greensock.com/gsap/" target="_blank" rel="noopener" class="footer-link">GSAP Animation</a>
+            <a href="https://github.com/darkroomengineering/lenis" target="_blank" rel="noopener" class="footer-link">Lenis Scroll Engine</a>
           </div>
         </div>
       </div>
       
-      <div style="margin-top: 24px; padding: 16px; background: rgba(14, 165, 233, 0.05); border-left: 4px solid var(--accent-ml); border-radius: 4px; font-size: 14px;">
-        <strong>特徵設計的結論與啟示：</strong>
-        波動度特徵在 1-day 短線模型中效果有限，甚至會因為高頻雜訊讓平均報酬率略微下滑。然而，在 5-day 中期模型中，波動度特徵有助於模型識別「趨勢延續」與「高風險震盪區」的差異，使得 5d_vol 平均策略報酬大幅領先 5d_base（56.0% vs 43.1%），並成功打敗了多數個股的 Buy & Hold。
+      <div class="footer-bottom">
+        <p class="copyright">&copy; 2026 Quantum Trading Strategy Lab. Built with passion, motion, and quantitative code.</p>
+        <p class="disclaimer">政大資料科學與金融科技量化分析報告第二組成果網站</p>
       </div>
-    </div>
-  </section>
-
-  <!-- Section 4: Methodology Notes (回測方法論) -->
-  <section id="methodology-section" class="container" style="margin-top: 60px;">
-    <div class="card" style="padding: 30px;">
-      <div class="section-title-wrap">
-        <h2><i class="fa-solid fa-compass" style="color: var(--accent-ml); margin-right: 10px;"></i>回測設定與指標說明</h2>
-        <p>我們採用極為嚴苛且符合實戰情況的設定，以確保回測數據不含水分、具備高度實踐價值。</p>
-      </div>
-
-      <div class="grid-3" style="margin-top: 20px;">
-        <div class="card" style="background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.05);">
-          <h4 style="font-size: 15px; margin-bottom: 10px; color: var(--accent-ml);"><i class="fa-solid fa-hourglass-half"></i> 1. 時間序列切分</h4>
-          <p style="font-size: 13.5px; color: var(--text-secondary);">
-            將 2018-2026 年資料清洗後，按順序切分為：
-            <br><strong>訓練集 (60%)</strong>：2018/01 - 2022/10，用於訓練模型。
-            <br><strong>驗證集 (20%)</strong>：2022/10 - 2024/05，用於調參、優化門檻。
-            <br><strong>測試集 (20%)</strong>：2024/05 - 2025/12，完全樣本外測試，得出最終報告指標。
-          </p>
-        </div>
-        <div class="card" style="background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.05);">
-          <h4 style="font-size: 15px; margin-bottom: 10px; color: var(--accent-ml);"><i class="fa-solid fa-circle-dollar-to-slot"></i> 2. 交易摩擦成本</h4>
-          <p style="font-size: 13.5px; color: var(--text-secondary);">
-            本系統設定<strong>單次部位變化扣除 10 bps (0.10%)</strong> 的交易摩擦成本。每次調整持倉（如多頭轉平倉、或平倉轉 2x 槓桿）時，都會精確扣除成本。這也是 Random 短線策略會出現高額虧損、而 ML 模型能透過控制進場與換手頻率鎖定利潤的原因。
-          </p>
-        </div>
-        <div class="card" style="background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.05);">
-          <h4 style="font-size: 15px; margin-bottom: 10px; color: var(--accent-ml);"><i class="fa-solid fa-scale-balanced"></i> 3. 最大回撤 (MDD) 與風險</h4>
-          <p style="font-size: 13.5px; color: var(--text-secondary);">
-            最大回撤 (MDD) 代表帳面資產波峰至波谷的最大跌幅。AlwaysUp 策略雖然因大牛市槓桿取得極大報酬，但 MDD 往往超過 -50%（鴻海高達 -78.5%）。機器學習策略能將 MDD 大幅限縮，顯著優化了風險調整後報酬（Sharpe Ratio）。
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer>
-    <div class="container">
-      <p>© 2026 Antigravity Quantitative Strategy Lab. All rights reserved.</p>
-      <p>政大資料科學研究所 金融科技量化分析報告第二組</p>
-      <p style="margin-top: 10px; font-size: 11px;">Powered by HTML5, Vanilla CSS & Chart.js. Deployable to GitHub Pages.</p>
     </div>
   </footer>
 
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Scripts CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.33/dist/lenis.min.js"></script>
   
-  <!-- Data & JavaScript Controller -->
-  <script src="data/report_data.js"></script>
-  <script src="app.js"></script>
+  <!-- Core Javascript -->
+  <script src="./landing.js?v=1"></script>
 </body>
 </html>

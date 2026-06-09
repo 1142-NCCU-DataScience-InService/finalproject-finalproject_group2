@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>技術指標與機器學習交易策略比較報告 - 互動式量化分析儀表板</title>
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="本研究針對技術指標預測策略與機器學習模型（包含 1-day/5-day direction、加入波動度特徵）進行測試集回測，並與 AlwaysUp 總是槓桿與 Random 隨機交易等基準模型進行深度對比分析。">
+  <meta name="author" content="Antigravity Quantitative Strategy Lab">
+  
+  <!-- Font and Icon CDNs -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Top Sticky Header -->
+  <header>
+    <div class="container header-container">
+      <div class="logo-section">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Quantitative Lab</span>
+      </div>
+      <nav class="header-nav">
+        <a href="#dashboard-section" class="active">個股分析儀表板</a>
+        <a href="#summary-section">整體結果摘要</a>
+        <a href="#features-section">特徵工程設計</a>
+        <a href="#methodology-section">回測方法論</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero / Banner Section -->
+  <section class="hero-section">
+    <div class="container">
+      <div class="badge">
+        <i class="fa-solid fa-graduation-cap"></i>
+        資料科學與金融科技量化報告
+      </div>
+      <h1>技術指標預測與機器學習交易策略比較報告</h1>
+      <p>針對技術指標預測模型進行測試集（2024-2025 年）回測與基準模型（AlwaysUp 2x 槓桿 / Random 隨機交易）對比，探討預測週期（1-day / 5-day）與波動度特徵（Volatility Features）對實際策略獲利與風控的影響。</p>
+    </div>
+  </section>
+
+  <!-- Section 1: Dashboard Section -->
+  <section id="dashboard-section" class="container">
+    <div class="card" style="padding: 30px; margin-bottom: 40px;">
+      <div class="section-title-wrap">
+        <h2><i class="fa-solid fa-sliders" style="color: var(--accent-ml); margin-right: 10px;"></i>個股量化分析儀表板</h2>
+        <p>請從側邊欄選擇個股標的，右側將自動更新該標的在最佳 ML 設定下的回測累積淨值曲線、策略統計指標與詳細對比表。</p>
+      </div>
+
+      <div class="dashboard-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+          <div class="sidebar-title">個股標的選擇</div>
+          <button class="sidebar-btn active" data-ticker="2330.TW">
+            <span>台積電</span>
+            <span class="ticker-symbol">2330.TW</span>
+          </button>
+          <button class="sidebar-btn" data-ticker="006208.TW">
+            <span>富邦台50</span>
+            <span class="ticker-symbol">006208.TW</span>
+          </button>
+          <button class="sidebar-btn" data-ticker="0050.TW">
+            <span>元大台灣50</span>
+            <span class="ticker-symbol">0050.TW</span>
+          </button>
+          <button class="sidebar-btn" data-ticker="2317.TW">
+            <span>鴻海</span>
+            <span class="ticker-symbol">2317.TW</span>
+          </button>
+          <button class="sidebar-btn" data-ticker="2454.TW">
+            <span>聯發科</span>
+            <span class="ticker-symbol">2454.TW</span>
+          </button>
+          <button class="sidebar-btn" data-ticker="2308.TW">
+            <span>台達電</span>
+            <span class="ticker-symbol">2308.TW</span>
+          </button>
+        </aside>
+
+        <!-- Main Dashboard View -->
+        <main class="dashboard-content">
+          <!-- Active Ticker Info -->
+          <div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--card-border);">
+            <h3 id="active-ticker-name" style="font-size: 24px; margin-bottom: 6px;">台積電 (2330.TW)</h3>
+            <p id="active-ticker-desc" style="color: var(--text-secondary); font-size: 14.5px;">台積電描述載入中...</p>
+          </div>
+
+          <!-- Metrics Cards Row -->
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-label">最佳 ML 策略報酬</div>
+              <div class="metric-value positive" id="metric-ml-return">0.00%</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">被動持有報酬 (B&H)</div>
+              <div class="metric-value positive" id="metric-bh-return">0.00%</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">策略最大回撤 (MDD)</div>
+              <div class="metric-value negative" id="metric-ml-mdd">-0.00%</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">策略 Sharpe 值</div>
+              <div class="metric-value" id="metric-ml-sharpe">0.00</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">策略進場次數 (Entry Count)</div>
+              <div class="metric-value" id="metric-ml-trades">0</div>
+            </div>
+          </div>
+
+          <!-- Chart and Details Card -->
+          <div style="display: grid; grid-template-columns: 1fr; gap: 24px;">
+            <div class="card" style="background: rgba(0, 0, 0, 0.15);">
+              <div class="chart-header">
+                <h4 style="font-size: 16px;"><i class="fa-solid fa-chart-area" style="color: var(--accent-ml); margin-right: 8px;"></i>測試集累積報酬淨值曲線 (2024 - 2025)</h4>
+                <div class="chart-legends">
+                  <div class="legend-item"><span class="legend-color ml"></span><span>最佳 ML 策略</span></div>
+                  <div class="legend-item"><span class="legend-color alwaysup"></span><span>AlwaysUp (2x槓桿)</span></div>
+                  <div class="legend-item"><span class="legend-color random"></span><span>Random (隨機交易)</span></div>
+                  <div class="legend-item"><span class="legend-color bh"></span><span>Buy & Hold</span></div>
+                </div>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="equity-chart"></canvas>
+              </div>
+            </div>
+
+            <!-- Detail Table -->
+            <div class="card" style="background: rgba(0, 0, 0, 0.15);">
+              <h4 style="font-size: 16px; margin-bottom: 12px;"><i class="fa-solid fa-list-check" style="color: var(--accent-ml); margin-right: 8px;"></i>各策略指標詳細對比表</h4>
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>策略 / 模型</th>
+                      <th>測試集 Accuracy<br><span class="th-hint">越大越好 ↑</span></th>
+                      <th>測試集 F1-score<br><span class="th-hint">越大越好 ↑</span></th>
+                      <th>策略總報酬<br><span class="th-hint">越大越好 ↑</span></th>
+                      <th>最大回撤 (MDD)<br><span class="th-hint">絕對值越小越好 ↓</span></th>
+                      <th>Sharpe Ratio<br><span class="th-hint">越大越好 ↑</span></th>
+                      <th>進場次數 (Entry Count)<br><span class="th-hint">適中為佳 (評估頻率)</span></th>
+                      <th>說明 / 表現評估</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ticker-comparison-rows">
+                    <!-- Dynamic Rows Insertion -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: Overall Results (整體結果摘要) -->
+  <section id="summary-section" class="container summary-table-section">
+    <div class="card" style="padding: 30px;">
+      <div class="section-title-wrap">
+        <h2><i class="fa-solid fa-ranking-star" style="color: var(--accent-ml); margin-right: 10px;"></i>四組訓練設定與基準模型平均對比</h2>
+        <p>此表展示所有 6 檔標的在 4 種不同特徵/週期設定下的平均表現，並加入了基準模型 AlwaysUp (2x槓桿) 與 Random (隨機) 的橫向對比。</p>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th rowspan="2">訓練 / 預測設定</th>
+              <th colspan="4">最佳機器學習模型 (平均)</th>
+              <th colspan="2">AlwaysUp 基準模型 (2x槓桿)</th>
+              <th colspan="2">Random 隨機基準模型 (平均)</th>
+            </tr>
+            <tr>
+              <th>分類 Accuracy</th>
+              <th>F1-score</th>
+              <th>策略報酬</th>
+              <th>超額報酬</th>
+              <th>策略報酬</th>
+              <th>超額報酬</th>
+              <th>策略報酬</th>
+              <th>超額報酬</th>
+            </tr>
+          </thead>
+          <tbody id="overall-summary-rows">
+            <!-- Dynamic Insertion -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="insights-grid">
+        <div class="insight-card">
+          <div class="insight-icon"><i class="fa-solid fa-bolt"></i></div>
+          <div class="insight-content">
+            <h3>AlwaysUp 槓桿策略的市場背景</h3>
+            <p>在回測期間（2024-2025 年），台灣股市適逢強勁的半導體與科技股單邊牛市。AlwaysUp 模型預測機率恆為 1.0，這會持續觸發 2x 槓桿持倉。在強烈單邊上升中，雙倍槓桿讓 AlwaysUp 取得了極高的累積報酬（平均超過 170%），但這也伴隨著雙倍的市場最大回撤與波動風險。如果股市反轉，2x 槓桿可能帶來永久性的資金重創。</p>
+          </div>
+        </div>
+        <div class="insight-card alwaysup">
+          <div class="insight-icon"><i class="fa-solid fa-shield-halved"></i></div>
+          <div class="insight-content">
+            <h3>交易確認與摩擦成本的影響</h3>
+            <p>1-day 預測週期下，隨機策略因為高頻率進出（平均 9 次）而面臨劇烈的交易摩擦成本損耗（扣除 10 bps），最終產生 -51.6% 的悲慘平均報酬。然而，當使用 5-day 預測週期並搭配「連續兩日確認」機制時，隨機信號的過度換手被大大過濾，進場與換手次數大減，使 Random 策略平均報酬提升至 +9.9%，充分證明了確認機制在控制交易磨損上的強大效用。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: Feature Engineering (特徵工程設計) -->
+  <section id="features-section" class="container" style="margin-top: 60px;">
+    <div class="card" style="padding: 30px;">
+      <div class="section-title-wrap">
+        <h2><i class="fa-solid fa-gears" style="color: var(--accent-ml); margin-right: 10px;"></i>特徵工程與波動度特徵設計</h2>
+        <p>本研究均使用 OHLCV（開盤價、最高價、最低價、收盤價、成交量）日資料，不直接使用絕對價格，而是轉換成技術指標與相對變化，以避免模型僅記住某一價格水位。</p>
+      </div>
+
+      <div class="feature-box">
+        <!-- Base Features -->
+        <div class="feature-list">
+          <div class="feature-list-title"><i class="fa-solid fa-chart-simple"></i>基礎技術特徵 (Base Features - 9 個)</div>
+          <div class="feature-item">
+            <span class="feature-name">return_1d</span>
+            <span class="feature-desc">前一日到當日的日報酬率</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-name">ma_ratio</span>
+            <span class="feature-desc">5日均線 / 20日均線，表示短期趨勢相對於中期趨勢的位置</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-name">bias_5 / bias_20</span>
+            <span class="feature-desc">收盤價相對 5日與 20日均線的偏離程度</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-name">vol_chg</span>
+            <span class="feature-desc">成交量日變化率，捕捉量能是否放大或縮小</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-name">rsi_14</span>
+            <span class="feature-desc">14日相對強弱指標，衡量超買、超賣與動能狀態</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-name">macd / signal / hist</span>
+            <span class="feature-desc">百分比形式計算的 MACD、訊號線與柱狀圖</span>
+          </div>
+        </div>
+
+        <!-- Volatility Features -->
+        <div class="feature-list">
+          <div class="feature-list-title"><i class="fa-solid fa-wave-square"></i>波動與風險狀態特徵 (Volatility Features - 新增 4 個)</div>
+          <div class="feature-item">
+            <span class="feature-name">atr_ratio_14</span>
+            <span class="feature-desc">14日 ATR / 收盤價，衡量近期每日價格震盪幅度相對股價的大小</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-name">volatility_20</span>
+            <span class="feature-desc">20日日報酬率之標準差，描述近期收益率波動程度</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-name">volume_ratio_20</span>
+            <span class="feature-desc">當日成交量 / 20日平均成交量，用以觀察量能是否異常放大</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-name">bb_width_20</span>
+            <span class="feature-desc">20日布林通道寬度 / 中線，衡量價格震盪區間是否擴張</span>
+          </div>
+        </div>
+      </div>
+      
+      <div style="margin-top: 24px; padding: 16px; background: rgba(14, 165, 233, 0.05); border-left: 4px solid var(--accent-ml); border-radius: 4px; font-size: 14px;">
+        <strong>特徵設計的結論與啟示：</strong>
+        波動度特徵在 1-day 短線模型中效果有限，甚至會因為高頻雜訊讓平均報酬率略微下滑。然而，在 5-day 中期模型中，波動度特徵有助於模型識別「趨勢延續」與「高風險震盪區」的差異，使得 5d_vol 平均策略報酬大幅領先 5d_base（56.0% vs 43.1%），並成功打敗了多數個股的 Buy & Hold。
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: Methodology Notes (回測方法論) -->
+  <section id="methodology-section" class="container" style="margin-top: 60px;">
+    <div class="card" style="padding: 30px;">
+      <div class="section-title-wrap">
+        <h2><i class="fa-solid fa-compass" style="color: var(--accent-ml); margin-right: 10px;"></i>回測設定與指標說明</h2>
+        <p>我們採用極為嚴苛且符合實戰情況的設定，以確保回測數據不含水分、具備高度實踐價值。</p>
+      </div>
+
+      <div class="grid-3" style="margin-top: 20px;">
+        <div class="card" style="background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.05);">
+          <h4 style="font-size: 15px; margin-bottom: 10px; color: var(--accent-ml);"><i class="fa-solid fa-hourglass-half"></i> 1. 時間序列切分</h4>
+          <p style="font-size: 13.5px; color: var(--text-secondary);">
+            將 2018-2026 年資料清洗後，按順序切分為：
+            <br><strong>訓練集 (60%)</strong>：2018/01 - 2022/10，用於訓練模型。
+            <br><strong>驗證集 (20%)</strong>：2022/10 - 2024/05，用於調參、優化門檻。
+            <br><strong>測試集 (20%)</strong>：2024/05 - 2025/12，完全樣本外測試，得出最終報告指標。
+          </p>
+        </div>
+        <div class="card" style="background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.05);">
+          <h4 style="font-size: 15px; margin-bottom: 10px; color: var(--accent-ml);"><i class="fa-solid fa-circle-dollar-to-slot"></i> 2. 交易摩擦成本</h4>
+          <p style="font-size: 13.5px; color: var(--text-secondary);">
+            本系統設定<strong>單次部位變化扣除 10 bps (0.10%)</strong> 的交易摩擦成本。每次調整持倉（如多頭轉平倉、或平倉轉 2x 槓桿）時，都會精確扣除成本。這也是 Random 短線策略會出現高額虧損、而 ML 模型能透過控制進場與換手頻率鎖定利潤的原因。
+          </p>
+        </div>
+        <div class="card" style="background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.05);">
+          <h4 style="font-size: 15px; margin-bottom: 10px; color: var(--accent-ml);"><i class="fa-solid fa-scale-balanced"></i> 3. 最大回撤 (MDD) 與風險</h4>
+          <p style="font-size: 13.5px; color: var(--text-secondary);">
+            最大回撤 (MDD) 代表帳面資產波峰至波谷的最大跌幅。AlwaysUp 策略雖然因大牛市槓桿取得極大報酬，但 MDD 往往超過 -50%（鴻海高達 -78.5%）。機器學習策略能將 MDD 大幅限縮，顯著優化了風險調整後報酬（Sharpe Ratio）。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>© 2026 Antigravity Quantitative Strategy Lab. All rights reserved.</p>
+      <p>政大資料科學研究所 金融科技量化分析報告第二組</p>
+      <p style="margin-top: 10px; font-size: 11px;">Powered by HTML5, Vanilla CSS & Chart.js. Deployable to GitHub Pages.</p>
+    </div>
+  </footer>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Data & JavaScript Controller -->
+  <script src="data/report_data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
